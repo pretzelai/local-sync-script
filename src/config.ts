@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, openSync, closeSync } from "fs";
 import { createInterface } from "readline/promises";
 import { stdin, stdout } from "process";
 import { join } from "path";
+import * as tty from "tty";
 
 const CONFIG_PATH = join(process.cwd(), ".env");
 
@@ -10,10 +11,20 @@ export interface Config {
   databaseUrl: string;
 }
 
+function getTTYInput(): { input: NodeJS.ReadableStream; cleanup: () => void } {
+  if (stdin.isTTY) return { input: stdin, cleanup: () => {} };
+  // stdin is piped (e.g. curl | bash) — open the terminal directly
+  const fd = openSync("/dev/tty", "r");
+  const stream = new tty.ReadStream(fd);
+  return { input: stream, cleanup: () => { stream.destroy(); closeSync(fd); } };
+}
+
 async function ask(question: string): Promise<string> {
-  const rl = createInterface({ input: stdin, output: stdout });
+  const { input, cleanup } = getTTYInput();
+  const rl = createInterface({ input, output: stdout });
   const answer = await rl.question(question);
   rl.close();
+  cleanup();
   return answer.trim();
 }
 
