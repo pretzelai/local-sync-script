@@ -62,8 +62,8 @@ export async function promptForConfig(): Promise<Config> {
   console.log("\n--- Stripe Sync Setup ---\n");
 
   const stripeKey = await ask("Enter your Stripe secret key (sk_...): ");
-  if (!stripeKey.startsWith("sk_")) {
-    console.error("Error: Stripe key must start with 'sk_'");
+  if (!stripeKey.startsWith("sk_") && !stripeKey.startsWith("rk_")) {
+    console.error("Error: Stripe key must start with 'sk_' or 'rk_'");
     process.exit(1);
   }
 

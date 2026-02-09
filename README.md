@@ -16,7 +16,7 @@ or do it manually:
   4. start postgres: docker compose up -d
   5. run it: bun start
 
-on first run it asks for your stripe secret key (sk_test_... or sk_live_...) and saves it to .env.
+on first run it asks for your stripe secret key (sk_... or rk_...) and saves it to .env.
 it runs migrations and backfills your balance transactions from stripe into postgres.
 then opens a web ui at http://localhost:3000 where you can run sql queries.
 
