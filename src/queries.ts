@@ -10,6 +10,135 @@ export interface SavedQuery {
  * Add your own queries here — they'll show up in the sidebar automatically.
  */
 export const savedQueries: SavedQuery[] = [
+  // ── Top Queries ─────────────────────────────
+  {
+    id: "avg-stripe-fee",
+    name: "Average Stripe Fee",
+    description: "Min/max/avg fee in absolute and percentage terms",
+    sql: `SELECT 
+  COUNT(*) AS transactions,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.balance_transactions
+WHERE type = 'charge' AND amount > 0;`,
+  },
+  {
+    id: "monthly-fees",
+    name: "Monthly Stripe Fees",
+    description: "Monthly fees with min/max/avg absolute and percentage",
+    sql: `SELECT 
+  TO_CHAR(TO_TIMESTAMP(created), 'YYYY-MM') AS month,
+  COUNT(*) AS txns,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.balance_transactions
+WHERE type = 'charge'
+GROUP BY month
+ORDER BY month DESC;`,
+  },
+  {
+    id: "payment-method-split",
+    name: "Payment Method Split",
+    description: "Fees by payment method type with min/max/avg absolute and pct",
+    sql: `SELECT 
+  COALESCE(c.payment_method_details->>'type', 'unknown') AS payment_method,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded' AND bt.type = 'charge'
+GROUP BY c.payment_method_details->>'type'
+ORDER BY total_amount DESC;`,
+  },
+  {
+    id: "card-type-split",
+    name: "Card Type Split",
+    description: "Breakdown by card brand (Visa, Mastercard, Amex, etc.)",
+    sql: `SELECT 
+  COALESCE(payment_method_details->'card'->>'brand', 'unknown') AS card_brand,
+  COALESCE(payment_method_details->'card'->>'funding', '') AS funding,
+  COUNT(*) AS charge_count,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(AVG(amount) / 100.0, 2) AS avg_amount,
+  ROUND(SUM(amount)::numeric / 
+    NULLIF(SUM(SUM(amount)) OVER (), 0) * 100, 1
+  ) AS pct_of_volume
+FROM stripe.charges
+WHERE status = 'succeeded'
+  AND payment_method_details->>'type' = 'card'
+GROUP BY card_brand, funding
+ORDER BY total_amount DESC;`,
+  },
+  {
+    id: "fees-by-card-type",
+    name: "Fees by Card Type",
+    description: "Fees per card brand with min/max/avg absolute and pct",
+    sql: `SELECT 
+  COALESCE(c.payment_method_details->'card'->>'brand', 'unknown') AS card_brand,
+  COALESCE(c.payment_method_details->'card'->>'funding', '') AS funding,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded'
+  AND c.payment_method_details->>'type' = 'card'
+  AND bt.type = 'charge'
+GROUP BY card_brand, funding
+ORDER BY total_fees DESC;`,
+  },
+  // ── Balance Transactions ──────────────────────
+  {
+    id: "balance-txns",
+    name: "Balance Transactions",
+    description: "All balance transactions with fees",
+    sql: `SELECT id, type, amount, fee, net, currency,
+  description, source, created
+FROM stripe.balance_transactions
+ORDER BY created DESC
+LIMIT 200;`,
+  },
+  {
+    id: "balance-txns-by-type",
+    name: "Balance Txns by Type",
+    description: "Volume and fees grouped by transaction type",
+    sql: `SELECT 
+  type,
+  COUNT(*) AS count,
+  SUM(amount) / 100.0 AS total_amount,
+  SUM(fee) / 100.0 AS total_fees,
+  SUM(net) / 100.0 AS total_net,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee
+FROM stripe.balance_transactions
+GROUP BY type
+ORDER BY total_fees DESC;`,
+  },
+  // ── Browse Data ───────────────────────────────
   {
     id: "tables",
     name: "All Tables",
@@ -119,85 +248,6 @@ LIMIT 200;`,
 FROM stripe._sync_runs
 ORDER BY started_at DESC
 LIMIT 20;`,
-  },
-  // ── Balance Transactions ──────────────────────
-  {
-    id: "balance-txns",
-    name: "Balance Transactions",
-    description: "All balance transactions with fees",
-    sql: `SELECT id, type, amount, fee, net, currency,
-  description, source, created
-FROM stripe.balance_transactions
-ORDER BY created DESC
-LIMIT 200;`,
-  },
-  {
-    id: "balance-txns-by-type",
-    name: "Balance Txns by Type",
-    description: "Volume and fees grouped by transaction type",
-    sql: `SELECT 
-  type,
-  COUNT(*) AS count,
-  SUM(amount) / 100.0 AS total_amount,
-  SUM(fee) / 100.0 AS total_fees,
-  SUM(net) / 100.0 AS total_net,
-  ROUND(AVG(fee) / 100.0, 2) AS avg_fee
-FROM stripe.balance_transactions
-GROUP BY type
-ORDER BY total_fees DESC;`,
-  },
-  {
-    id: "avg-stripe-fee",
-    name: "Average Stripe Fee",
-    description: "Average fee charged by Stripe per transaction",
-    sql: `SELECT 
-  COUNT(*) AS total_transactions,
-  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
-  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
-  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
-  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
-  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
-  ROUND(
-    CASE WHEN SUM(amount) > 0 
-      THEN (SUM(fee)::numeric / SUM(amount)::numeric) * 100 
-      ELSE 0 
-    END, 2
-  ) AS fee_pct_of_amount
-FROM stripe.balance_transactions
-WHERE type = 'charge' AND amount > 0;`,
-  },
-  {
-    id: "monthly-fees",
-    name: "Monthly Stripe Fees",
-    description: "Fees paid to Stripe broken down by month",
-    sql: `SELECT 
-  TO_CHAR(TO_TIMESTAMP(created), 'YYYY-MM') AS month,
-  COUNT(*) AS transactions,
-  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
-  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
-  ROUND(SUM(net) / 100.0, 2) AS total_net,
-  ROUND(AVG(fee) / 100.0, 2) AS avg_fee
-FROM stripe.balance_transactions
-WHERE type = 'charge'
-GROUP BY month
-ORDER BY month DESC;`,
-  },
-  {
-    id: "payment-method-split",
-    name: "Payment Method Split",
-    description: "Breakdown of charges by payment method type",
-    sql: `SELECT 
-  COALESCE(payment_method_details->>'type', 'unknown') AS payment_method,
-  COUNT(*) AS charge_count,
-  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
-  ROUND(AVG(amount) / 100.0, 2) AS avg_amount,
-  ROUND(SUM(amount)::numeric / 
-    NULLIF(SUM(SUM(amount)) OVER (), 0) * 100, 1
-  ) AS pct_of_volume
-FROM stripe.charges
-WHERE status = 'succeeded'
-GROUP BY payment_method_details->>'type'
-ORDER BY total_amount DESC;`,
   },
   // ──────────────────────────────────────────────
   // ADD YOUR CUSTOM QUERIES BELOW
