@@ -79,4 +79,4 @@ echo ""
 echo "ready. starting $DIR..."
 echo ""
 
-exec bun run src/index.ts
+exec bun src/index.ts < /dev/tty
