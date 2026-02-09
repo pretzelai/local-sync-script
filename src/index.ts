@@ -4,15 +4,19 @@ import { loadConfig, promptForConfig, type Config } from "./config";
 import { testConnection, isDatabaseReady, nukeDatabase, runMigrate, runBackfill } from "./sync";
 import { startServer } from "./server";
 
-const flags = new Set(process.argv.slice(2));
+const args = process.argv.slice(2);
+const flags = new Set(args);
 const forceResync = flags.has("--resync");
 const forceNuke = flags.has("--nuke");
+const objectIdx = args.indexOf("--object");
+const backfillObject = objectIdx !== -1 && args[objectIdx + 1] ? args[objectIdx + 1] : "balance_transaction";
 
 async function main() {
   console.log("\n  Stripe Sync Explorer\n");
 
   if (forceNuke) console.log("  --nuke flag: will drop and recreate everything");
   else if (forceResync) console.log("  --resync flag: will re-run migrate + backfill");
+  if (forceNuke || forceResync) console.log(`  --object: ${backfillObject}`);
 
   // ── 1. Load or prompt for config ──
   let config: Config;
@@ -50,7 +54,7 @@ async function main() {
   if (shouldSync) {
     console.log("  Running sync...\n");
     await runMigrate(config.databaseUrl);
-    await runBackfill(config);
+    await runBackfill(config, backfillObject);
     console.log("");
   } else {
     console.log("  Database already has Stripe data — skipping sync.\n");
