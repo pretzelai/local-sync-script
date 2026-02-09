@@ -76,7 +76,7 @@ if [ "$PG_READY" -eq 0 ]; then
 fi
 
 echo ""
-echo "ready. starting $DIR..."
+echo "install complete! to start, run:"
 echo ""
-
-exec bun src/index.ts < /dev/tty
+echo "  cd $DIR && bun start"
+echo ""
