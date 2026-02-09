@@ -14,7 +14,8 @@ export function startServer(config: Config) {
     max: 10,
   });
 
-  const htmlPath = `${import.meta.dir}/ui.html`;
+  const sqlHtmlPath = `${import.meta.dir}/ui.html`;
+  const dashboardHtmlPath = `${import.meta.dir}/dashboard.html`;
 
   const server = Bun.serve({
     port: 3000,
@@ -22,9 +23,16 @@ export function startServer(config: Config) {
     async fetch(req) {
       const url = new URL(req.url);
 
-      // ── Serve UI ──
+      // ── Dashboard (default) ──
       if (url.pathname === "/") {
-        return new Response(Bun.file(htmlPath), {
+        return new Response(Bun.file(dashboardHtmlPath), {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+
+      // ── SQL Editor ──
+      if (url.pathname === "/sql") {
+        return new Response(Bun.file(sqlHtmlPath), {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       }

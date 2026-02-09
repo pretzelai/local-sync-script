@@ -112,6 +112,55 @@ WHERE c.status = 'succeeded'
 GROUP BY card_brand, funding
 ORDER BY total_fees DESC;`,
   },
+  {
+    id: "fee-components",
+    name: "Fee Component Breakdown",
+    description: "Processing fees vs currency conversion vs other surcharges",
+    sql: `SELECT
+  detail->>'description' AS fee_component,
+  COUNT(*) AS occurrences,
+  ROUND(SUM((detail->>'amount')::numeric) / 100.0, 2) AS total_amount,
+  ROUND(AVG((detail->>'amount')::numeric) / 100.0, 2) AS avg_amount,
+  ROUND(MIN((detail->>'amount')::numeric) / 100.0, 2) AS min_amount,
+  ROUND(MAX((detail->>'amount')::numeric) / 100.0, 2) AS max_amount,
+  ROUND(
+    SUM((detail->>'amount')::numeric) /
+    NULLIF(SUM(SUM((detail->>'amount')::numeric)) OVER (), 0) * 100, 1
+  ) AS pct_of_total_fees
+FROM stripe.balance_transactions bt,
+  jsonb_array_elements(bt.fee_details) AS detail
+WHERE bt.type = 'charge'
+GROUP BY fee_component
+ORDER BY total_amount DESC;`,
+  },
+  {
+    id: "domestic-intl",
+    name: "Domestic vs International",
+    description: "Fee comparison for domestic vs international cards",
+    sql: `SELECT
+  CASE
+    WHEN c.payment_method_details->'card'->>'country' IS NULL THEN 'unknown'
+    WHEN c.payment_method_details->'card'->>'country' = UPPER(LEFT(bt.currency, 2))
+      THEN 'domestic'
+    ELSE 'international (' || COALESCE(c.payment_method_details->'card'->>'country', '?') || ')'
+  END AS card_origin,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded'
+  AND c.payment_method_details->>'type' = 'card'
+  AND bt.type = 'charge'
+GROUP BY card_origin
+ORDER BY total_fees DESC;`,
+  },
   // ── Balance Transactions ──────────────────────
   {
     id: "balance-txns",

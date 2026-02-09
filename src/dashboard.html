@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stripe Fee Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #09090b;
+      --bg-surface: #111113;
+      --bg-elevated: #18181b;
+      --bg-hover: #1f1f23;
+      --border: #27272a;
+      --text: #fafafa;
+      --text-dim: #a1a1aa;
+      --text-muted: #71717a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-dim: rgba(99,102,241,0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239,68,68,0.08);
+      --red-border: rgba(239,68,68,0.2);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --yellow: #eab308;
+      --yellow-dim: rgba(234,179,8,0.12);
+      --orange: #f97316;
+      --orange-dim: rgba(249,115,22,0.12);
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+      --radius: 8px;
+    }
+    html { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      min-height: 100%;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+    nav { display: flex; gap: 4px; }
+    nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.12s;
+    }
+    nav a:hover { color: var(--text); background: var(--bg-hover); }
+    nav a.active { color: var(--text); background: var(--accent-dim); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    button {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-danger {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+      padding: 6px 12px;
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.15); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      padding: 6px 10px;
+    }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--text); }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 4px 10px;
+      border-radius: 100px; border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    .status-pill.syncing .dot { background: var(--yellow); animation: pulse 1s infinite; }
+    .status-pill.error .dot { background: var(--red); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Main ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    /* ── Stat Cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .stat-card .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-family: var(--font-mono);
+    }
+    .stat-card .sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    .stat-card .value.accent { color: var(--accent); }
+    .stat-card .value.green { color: var(--green); }
+    .stat-card .value.red { color: var(--red); }
+    .stat-card .value.orange { color: var(--orange); }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 36px;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .info-box {
+      background: var(--accent-dim);
+      border: 1px solid rgba(99,102,241,0.15);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.65;
+      margin-bottom: 14px;
+    }
+    .info-box strong { color: var(--text); }
+
+    /* ── Tables ── */
+    .table-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-card .table-scroll {
+      overflow-x: auto;
+    }
+    .table-card .table-scroll::-webkit-scrollbar { height: 4px; }
+    .table-card .table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      text-align: left;
+      padding: 10px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    td {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg-hover); }
+    td.num { text-align: right; }
+    td.pct { text-align: right; color: var(--text-dim); }
+    td.highlight { color: var(--accent); font-weight: 600; }
+    td.null-val { color: var(--text-muted); font-style: italic; }
+
+    /* ── Loading ── */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      color: var(--text-muted);
+      font-size: 13px;
+      gap: 10px;
+    }
+    .spin {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg {
+      padding: 16px;
+      color: var(--red);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
+    }
+    .overlay-box {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 12px; padding: 32px; min-width: 360px; max-width: 440px; text-align: center;
+    }
+    .overlay-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .overlay-box p { font-size: 13px; color: var(--text-dim); line-height: 1.6; margin-bottom: 20px; }
+    .overlay-box .actions { display: flex; gap: 10px; justify-content: center; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="rgba(99,102,241,0.2)" stroke="#6366f1"/>
+        </svg>
+        Stripe Sync Explorer
+      </div>
+      <nav>
+        <a href="/" class="active">Dashboard</a>
+        <a href="/sql">SQL Editor</a>
+      </nav>
+    </div>
+    <div class="header-right">
+      <div class="status-pill" id="statusPill">
+        <span class="dot"></span>
+        <span id="statusText">Connected</span>
+      </div>
+      <button class="btn-danger" id="nukeBtn">Nuke &amp; Resync</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1 class="page-title">Stripe Fee Dashboard</h1>
+    <p class="page-subtitle">Detailed breakdown of all Stripe processing fees on your account</p>
+
+    <!-- ── Summary Cards ── -->
+    <div class="stats-grid" id="summaryCards">
+      <div class="loading"><div class="spin"></div> Loading fee data...</div>
+    </div>
+
+    <!-- ── Fee Explainer ── -->
+    <div class="section">
+      <div class="info-box">
+        <strong>How Stripe fees work:</strong> Stripe charges a per-transaction fee on every successful payment.
+        The standard rate is <strong>2.9% + $0.30</strong> for domestic US cards.
+        International cards add <strong>+1.5%</strong>, and currency conversion adds another <strong>+1%</strong>.
+        Amex, premium/rewards cards, and corporate cards may carry higher interchange rates passed through by Stripe.
+        Debit cards are often cheaper than credit cards. The numbers below show your actual effective rates.
+      </div>
+    </div>
+
+    <!-- ── Fee Component Breakdown ── -->
+    <div class="section" id="feeComponentSection">
+      <div class="section-header">
+        <h2 class="section-title">Fee Component Breakdown</h2>
+      </div>
+      <p class="section-desc">
+        Each Stripe fee is made up of individual components stored in <code style="font-family:var(--font-mono);background:var(--bg-hover);padding:2px 5px;border-radius:3px;font-size:12px">fee_details</code>.
+        This shows exactly where your money goes — how much is base processing vs currency conversion vs other surcharges.
+      </p>
+      <div class="info-box">
+        <strong>Stripe processing fees</strong> — The base fee (2.9% + $0.30 standard). This is charged on every payment.<br>
+        <strong>Stripe currency conversion fee</strong> — Charged when the payment currency differs from your settlement currency. Typically 1% of the converted amount.<br>
+        <strong>International card fee</strong> — Additional surcharge when the card was issued outside your country. Typically +1.5%.<br>
+        <strong>Radar / fraud prevention</strong> — If you use Stripe Radar for Fraud Teams, $0.02-$0.07 per screened transaction.<br>
+        <strong>Tax</strong> — Some jurisdictions charge VAT/GST on Stripe's processing fees.
+      </div>
+      <div class="table-card" id="feeComponentTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Domestic vs International ── -->
+    <div class="section" id="domesticIntlSection">
+      <div class="section-header">
+        <h2 class="section-title">Domestic vs International Cards</h2>
+      </div>
+      <p class="section-desc">
+        Compares fees for cards issued in your country vs cards issued abroad.
+        International cards cost more because of cross-border interchange and (optionally) currency conversion.
+      </p>
+      <div class="info-box">
+        <strong>Domestic cards</strong> — Standard Stripe rate (2.9% + $0.30 in the US).<br>
+        <strong>International cards (same currency)</strong> — +1.5% surcharge on top of the base rate.<br>
+        <strong>International cards (different currency)</strong> — +1.5% cross-border + 1% currency conversion = +2.5% total surcharge.<br>
+        The card country is determined by the issuing bank, not the customer's billing address.
+      </div>
+      <div class="table-card" id="domesticIntlTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Monthly Fees ── -->
+    <div class="section" id="monthlySection">
+      <div class="section-header">
+        <h2 class="section-title">Monthly Fees</h2>
+      </div>
+      <p class="section-desc">
+        Stripe processing fees broken down by month. Shows the min, average, and max fee both as a dollar
+        amount and as a percentage of the charge. Useful for spotting trends — e.g. if your average fee rate
+        is climbing, you may be getting more international or premium card payments.
+      </p>
+      <div class="table-card" id="monthlyTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Payment Method Split ── -->
+    <div class="section" id="methodSection">
+      <div class="section-header">
+        <h2 class="section-title">Fees by Payment Method</h2>
+      </div>
+      <p class="section-desc">
+        How fees vary across payment method types (card, bank transfer, etc.).
+        <strong>Card</strong> payments typically have the highest percentage fees.
+        <strong>ACH / bank transfers</strong> are usually capped at a low flat fee.
+        <strong>Link</strong> and <strong>wallet</strong> payments (Apple Pay, Google Pay) use the underlying card rate.
+      </p>
+      <div class="table-card" id="methodTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Fees by Card Brand ── -->
+    <div class="section" id="cardSection">
+      <div class="section-header">
+        <h2 class="section-title">Fees by Card Brand</h2>
+      </div>
+      <p class="section-desc">
+        Breakdown by card network and funding type. Key things to know:
+      </p>
+      <div class="info-box">
+        <strong>Visa / Mastercard</strong> — Standard interchange. Debit cards are cheapest, credit is standard, prepaid varies.<br>
+        <strong>Amex</strong> — Typically higher interchange (~3.3-3.5%), often passed through at a higher rate by Stripe.<br>
+        <strong>Discover</strong> — Similar to Visa/MC, sometimes slightly higher.<br>
+        <strong>Credit vs Debit</strong> — Debit interchange is regulated (Durbin amendment in the US) and typically much lower. If you see high debit fees, check for international debit cards.<br>
+        <strong>Prepaid</strong> — Rates vary widely; gift cards and corporate prepaid may have different interchange tiers.
+      </div>
+      <div class="table-card" id="cardTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── Balance Transaction Types ── -->
+    <div class="section" id="txnTypeSection">
+      <div class="section-header">
+        <h2 class="section-title">Fees by Transaction Type</h2>
+      </div>
+      <p class="section-desc">
+        Not all balance transactions are charges. Stripe also records payouts, refunds, adjustments, and more.
+        Each type may carry different fees:
+      </p>
+      <div class="info-box">
+        <strong>charge</strong> — The main processing fee on customer payments (2.9% + $0.30 standard).<br>
+        <strong>refund</strong> — Stripe does not return the original processing fee on refunds. You lose the fee.<br>
+        <strong>payout</strong> — Transfer to your bank. Usually free on standard 2-day schedule; instant payouts cost 1%.<br>
+        <strong>adjustment</strong> — Manual balance adjustments by Stripe (disputes, corrections).<br>
+        <strong>stripe_fee</strong> — Additional platform fees (Stripe Billing, Radar, Tax, etc.).<br>
+        <strong>network_cost</strong> — Pass-through interchange and network fees (visible on Interchange+ pricing).
+      </div>
+      <div class="table-card" id="txnTypeTable">
+        <div class="loading"><div class="spin"></div> Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog -->
+  <div class="overlay" id="confirmOverlay" style="display:none">
+    <div class="overlay-box">
+      <h3>Nuke &amp; Resync</h3>
+      <p>This will <strong>delete all synced Stripe data</strong> and re-sync. This may take several minutes.</p>
+      <div class="actions">
+        <button class="btn-ghost" id="cancelBtn">Cancel</button>
+        <button class="btn-danger" id="confirmBtn">Yes, Nuke &amp; Resync</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sync Overlay -->
+  <div class="overlay" id="syncOverlay" style="display:none">
+    <div class="overlay-box">
+      <div class="spinner"></div>
+      <h3 id="syncTitle">Syncing...</h3>
+      <p id="syncMessage">Preparing...</p>
+    </div>
+  </div>
+
+  <script>
+    // ── Helpers ──
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    function fmt(v) {
+      if (v === null || v === undefined) return '<span class="null-val">-</span>';
+      return esc(String(v));
+    }
+    function fmtDollar(v) {
+      if (v === null || v === undefined) return '-';
+      const n = Number(v);
+      return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtPct(v) {
+      if (v === null || v === undefined) return '-';
+      return Number(v).toFixed(2) + '%';
+    }
+    function fmtNum(v) {
+      if (v === null || v === undefined) return '-';
+      return Number(v).toLocaleString('en-US');
+    }
+
+    async function runSQL(sql) {
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql }),
+      });
+      return res.json();
+    }
+
+    function renderError(containerId, msg) {
+      document.getElementById(containerId).innerHTML = `<div class="error-msg">${esc(msg)}</div>`;
+    }
+
+    // ── Load Summary Cards ──
+    async function loadSummary() {
+      const container = document.getElementById('summaryCards');
+      try {
+        const data = await runSQL(`SELECT
+  COUNT(*) AS transactions,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.balance_transactions
+WHERE type = 'charge' AND amount > 0;`);
+        if (data.error) { container.innerHTML = `<div class="error-msg">${esc(data.error)}</div>`; return; }
+        const r = data.rows[0] || {};
+        container.innerHTML = `
+          <div class="stat-card">
+            <div class="label">Total Charges</div>
+            <div class="value">${fmtNum(r.transactions)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Total Volume</div>
+            <div class="value green">${fmtDollar(r.total_amount)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Total Fees Paid</div>
+            <div class="value red">${fmtDollar(r.total_fees)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Avg Fee (absolute)</div>
+            <div class="value accent">${fmtDollar(r.avg_fee)}</div>
+            <div class="sub">Min ${fmtDollar(r.min_fee)} / Max ${fmtDollar(r.max_fee)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Avg Fee Rate</div>
+            <div class="value orange">${fmtPct(r.avg_fee_pct)}</div>
+            <div class="sub">Min ${fmtPct(r.min_fee_pct)} / Max ${fmtPct(r.max_fee_pct)}</div>
+          </div>
+        `;
+      } catch (e) { container.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`; }
+    }
+
+    // ── Generic table renderer ──
+    function buildTable(cols, rows, formatters) {
+      let html = '<div class="table-scroll"><table><thead><tr>';
+      cols.forEach(c => { html += `<th>${esc(c.label)}</th>`; });
+      html += '</tr></thead><tbody>';
+      rows.forEach(row => {
+        html += '<tr>';
+        cols.forEach(c => {
+          const v = row[c.key];
+          const f = formatters[c.key] || fmt;
+          const cls = c.cls || '';
+          html += `<td class="${cls}">${f(v)}</td>`;
+        });
+        html += '</tr>';
+      });
+      if (!rows.length) {
+        html += `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--text-muted);padding:24px;">No data</td></tr>`;
+      }
+      html += '</tbody></table></div>';
+      return html;
+    }
+
+    // ── Load Fee Component Breakdown ──
+    async function loadFeeComponents() {
+      try {
+        const data = await runSQL(`SELECT
+  detail->>'description' AS fee_component,
+  COUNT(*) AS occurrences,
+  ROUND(SUM((detail->>'amount')::numeric) / 100.0, 2) AS total_amount,
+  ROUND(AVG((detail->>'amount')::numeric) / 100.0, 2) AS avg_amount,
+  ROUND(MIN((detail->>'amount')::numeric) / 100.0, 2) AS min_amount,
+  ROUND(MAX((detail->>'amount')::numeric) / 100.0, 2) AS max_amount,
+  ROUND(
+    SUM((detail->>'amount')::numeric) /
+    NULLIF(SUM(SUM((detail->>'amount')::numeric)) OVER (), 0) * 100, 1
+  ) AS pct_of_total_fees
+FROM stripe.balance_transactions bt,
+  jsonb_array_elements(bt.fee_details) AS detail
+WHERE bt.type = 'charge'
+GROUP BY fee_component
+ORDER BY total_amount DESC;`);
+        if (data.error) { renderError('feeComponentTable', data.error); return; }
+        const cols = [
+          { key: 'fee_component', label: 'Fee Component' },
+          { key: 'occurrences', label: 'Count', cls: 'num' },
+          { key: 'total_amount', label: 'Total', cls: 'num highlight' },
+          { key: 'pct_of_total_fees', label: '% of Fees', cls: 'pct' },
+          { key: 'min_amount', label: 'Min', cls: 'num' },
+          { key: 'avg_amount', label: 'Avg', cls: 'num' },
+          { key: 'max_amount', label: 'Max', cls: 'num' },
+        ];
+        document.getElementById('feeComponentTable').innerHTML = buildTable(cols, data.rows, {
+          occurrences: fmtNum, total_amount: fmtDollar,
+          min_amount: fmtDollar, avg_amount: fmtDollar, max_amount: fmtDollar,
+          pct_of_total_fees: fmtPct,
+        });
+      } catch (e) { renderError('feeComponentTable', e.message); }
+    }
+
+    // ── Load Domestic vs International ──
+    async function loadDomesticIntl() {
+      try {
+        const data = await runSQL(`SELECT
+  CASE
+    WHEN c.payment_method_details->'card'->>'country' IS NULL THEN 'unknown'
+    WHEN c.payment_method_details->'card'->>'country' = c.currency
+      THEN 'unknown'
+    WHEN c.payment_method_details->'card'->>'country' = UPPER(LEFT(bt.currency, 2))
+      THEN 'domestic'
+    ELSE 'international (' || COALESCE(c.payment_method_details->'card'->>'country', '?') || ')'
+  END AS card_origin,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded'
+  AND c.payment_method_details->>'type' = 'card'
+  AND bt.type = 'charge'
+GROUP BY card_origin
+ORDER BY total_fees DESC;`);
+        if (data.error) { renderError('domesticIntlTable', data.error); return; }
+        const cols = [
+          { key: 'card_origin', label: 'Card Origin' },
+          { key: 'charges', label: 'Charges', cls: 'num' },
+          { key: 'total_amount', label: 'Volume', cls: 'num' },
+          { key: 'total_fees', label: 'Total Fees', cls: 'num highlight' },
+          { key: 'min_fee', label: 'Min Fee', cls: 'num' },
+          { key: 'avg_fee', label: 'Avg Fee', cls: 'num' },
+          { key: 'max_fee', label: 'Max Fee', cls: 'num' },
+          { key: 'min_fee_pct', label: 'Min %', cls: 'pct' },
+          { key: 'avg_fee_pct', label: 'Avg %', cls: 'pct' },
+          { key: 'max_fee_pct', label: 'Max %', cls: 'pct' },
+        ];
+        document.getElementById('domesticIntlTable').innerHTML = buildTable(cols, data.rows, {
+          charges: fmtNum, total_amount: fmtDollar, total_fees: fmtDollar,
+          min_fee: fmtDollar, avg_fee: fmtDollar, max_fee: fmtDollar,
+          min_fee_pct: fmtPct, avg_fee_pct: fmtPct, max_fee_pct: fmtPct,
+        });
+      } catch (e) { renderError('domesticIntlTable', e.message); }
+    }
+
+    // ── Load Monthly Fees ──
+    async function loadMonthly() {
+      try {
+        const data = await runSQL(`SELECT
+  TO_CHAR(TO_TIMESTAMP(created), 'YYYY-MM') AS month,
+  COUNT(*) AS txns,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.balance_transactions
+WHERE type = 'charge'
+GROUP BY month ORDER BY month DESC;`);
+        if (data.error) { renderError('monthlyTable', data.error); return; }
+        const cols = [
+          { key: 'month', label: 'Month' },
+          { key: 'txns', label: 'Charges', cls: 'num' },
+          { key: 'total_amount', label: 'Volume', cls: 'num' },
+          { key: 'total_fees', label: 'Total Fees', cls: 'num highlight' },
+          { key: 'min_fee', label: 'Min Fee', cls: 'num' },
+          { key: 'avg_fee', label: 'Avg Fee', cls: 'num' },
+          { key: 'max_fee', label: 'Max Fee', cls: 'num' },
+          { key: 'min_fee_pct', label: 'Min %', cls: 'pct' },
+          { key: 'avg_fee_pct', label: 'Avg %', cls: 'pct' },
+          { key: 'max_fee_pct', label: 'Max %', cls: 'pct' },
+        ];
+        document.getElementById('monthlyTable').innerHTML = buildTable(cols, data.rows, {
+          txns: fmtNum, total_amount: fmtDollar, total_fees: fmtDollar,
+          min_fee: fmtDollar, avg_fee: fmtDollar, max_fee: fmtDollar,
+          min_fee_pct: fmtPct, avg_fee_pct: fmtPct, max_fee_pct: fmtPct,
+        });
+      } catch (e) { renderError('monthlyTable', e.message); }
+    }
+
+    // ── Load Payment Method Split ──
+    async function loadMethodSplit() {
+      try {
+        const data = await runSQL(`SELECT
+  COALESCE(c.payment_method_details->>'type', 'unknown') AS payment_method,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded' AND bt.type = 'charge'
+GROUP BY c.payment_method_details->>'type'
+ORDER BY total_amount DESC;`);
+        if (data.error) { renderError('methodTable', data.error); return; }
+        const cols = [
+          { key: 'payment_method', label: 'Method' },
+          { key: 'charges', label: 'Charges', cls: 'num' },
+          { key: 'total_amount', label: 'Volume', cls: 'num' },
+          { key: 'total_fees', label: 'Total Fees', cls: 'num highlight' },
+          { key: 'min_fee', label: 'Min Fee', cls: 'num' },
+          { key: 'avg_fee', label: 'Avg Fee', cls: 'num' },
+          { key: 'max_fee', label: 'Max Fee', cls: 'num' },
+          { key: 'min_fee_pct', label: 'Min %', cls: 'pct' },
+          { key: 'avg_fee_pct', label: 'Avg %', cls: 'pct' },
+          { key: 'max_fee_pct', label: 'Max %', cls: 'pct' },
+        ];
+        document.getElementById('methodTable').innerHTML = buildTable(cols, data.rows, {
+          charges: fmtNum, total_amount: fmtDollar, total_fees: fmtDollar,
+          min_fee: fmtDollar, avg_fee: fmtDollar, max_fee: fmtDollar,
+          min_fee_pct: fmtPct, avg_fee_pct: fmtPct, max_fee_pct: fmtPct,
+        });
+      } catch (e) { renderError('methodTable', e.message); }
+    }
+
+    // ── Load Card Brand Split ──
+    async function loadCardSplit() {
+      try {
+        const data = await runSQL(`SELECT
+  COALESCE(c.payment_method_details->'card'->>'brand', 'unknown') AS card_brand,
+  COALESCE(c.payment_method_details->'card'->>'funding', '-') AS funding,
+  COUNT(*) AS charges,
+  ROUND(SUM(c.amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(bt.fee) / 100.0, 2) AS total_fees,
+  ROUND(MIN(bt.fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(bt.fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(bt.fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN c.amount > 0 THEN bt.fee::numeric / c.amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.charges c
+JOIN stripe.balance_transactions bt ON bt.source = c.id
+WHERE c.status = 'succeeded' AND c.payment_method_details->>'type' = 'card' AND bt.type = 'charge'
+GROUP BY card_brand, funding
+ORDER BY total_fees DESC;`);
+        if (data.error) { renderError('cardTable', data.error); return; }
+        const cols = [
+          { key: 'card_brand', label: 'Brand' },
+          { key: 'funding', label: 'Funding' },
+          { key: 'charges', label: 'Charges', cls: 'num' },
+          { key: 'total_amount', label: 'Volume', cls: 'num' },
+          { key: 'total_fees', label: 'Total Fees', cls: 'num highlight' },
+          { key: 'min_fee', label: 'Min Fee', cls: 'num' },
+          { key: 'avg_fee', label: 'Avg Fee', cls: 'num' },
+          { key: 'max_fee', label: 'Max Fee', cls: 'num' },
+          { key: 'min_fee_pct', label: 'Min %', cls: 'pct' },
+          { key: 'avg_fee_pct', label: 'Avg %', cls: 'pct' },
+          { key: 'max_fee_pct', label: 'Max %', cls: 'pct' },
+        ];
+        document.getElementById('cardTable').innerHTML = buildTable(cols, data.rows, {
+          charges: fmtNum, total_amount: fmtDollar, total_fees: fmtDollar,
+          min_fee: fmtDollar, avg_fee: fmtDollar, max_fee: fmtDollar,
+          min_fee_pct: fmtPct, avg_fee_pct: fmtPct, max_fee_pct: fmtPct,
+        });
+      } catch (e) { renderError('cardTable', e.message); }
+    }
+
+    // ── Load Transaction Type Split ──
+    async function loadTxnTypes() {
+      try {
+        const data = await runSQL(`SELECT
+  type,
+  COUNT(*) AS count,
+  ROUND(SUM(amount) / 100.0, 2) AS total_amount,
+  ROUND(SUM(fee) / 100.0, 2) AS total_fees,
+  ROUND(SUM(net) / 100.0, 2) AS total_net,
+  ROUND(MIN(fee) / 100.0, 2) AS min_fee,
+  ROUND(AVG(fee) / 100.0, 2) AS avg_fee,
+  ROUND(MAX(fee) / 100.0, 2) AS max_fee,
+  ROUND(MIN(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS min_fee_pct,
+  ROUND(AVG(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS avg_fee_pct,
+  ROUND(MAX(CASE WHEN amount > 0 THEN fee::numeric / amount::numeric * 100 END), 2) AS max_fee_pct
+FROM stripe.balance_transactions
+GROUP BY type ORDER BY total_fees DESC;`);
+        if (data.error) { renderError('txnTypeTable', data.error); return; }
+        const cols = [
+          { key: 'type', label: 'Type' },
+          { key: 'count', label: 'Count', cls: 'num' },
+          { key: 'total_amount', label: 'Volume', cls: 'num' },
+          { key: 'total_fees', label: 'Total Fees', cls: 'num highlight' },
+          { key: 'total_net', label: 'Net', cls: 'num' },
+          { key: 'min_fee', label: 'Min Fee', cls: 'num' },
+          { key: 'avg_fee', label: 'Avg Fee', cls: 'num' },
+          { key: 'max_fee', label: 'Max Fee', cls: 'num' },
+          { key: 'min_fee_pct', label: 'Min %', cls: 'pct' },
+          { key: 'avg_fee_pct', label: 'Avg %', cls: 'pct' },
+          { key: 'max_fee_pct', label: 'Max %', cls: 'pct' },
+        ];
+        document.getElementById('txnTypeTable').innerHTML = buildTable(cols, data.rows, {
+          count: fmtNum, total_amount: fmtDollar, total_fees: fmtDollar, total_net: fmtDollar,
+          min_fee: fmtDollar, avg_fee: fmtDollar, max_fee: fmtDollar,
+          min_fee_pct: fmtPct, avg_fee_pct: fmtPct, max_fee_pct: fmtPct,
+        });
+      } catch (e) { renderError('txnTypeTable', e.message); }
+    }
+
+    // ── Nuke & Resync ──
+    const nukeBtn = document.getElementById('nukeBtn');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const syncOverlay = document.getElementById('syncOverlay');
+    const syncTitle = document.getElementById('syncTitle');
+    const syncMsg = document.getElementById('syncMessage');
+    const statusPill = document.getElementById('statusPill');
+    const statusTxt = document.getElementById('statusText');
+
+    nukeBtn.addEventListener('click', () => { confirmOverlay.style.display = 'flex'; });
+    cancelBtn.addEventListener('click', () => { confirmOverlay.style.display = 'none'; });
+    confirmBtn.addEventListener('click', async () => {
+      confirmOverlay.style.display = 'none';
+      syncOverlay.style.display = 'flex';
+      syncTitle.textContent = 'Syncing...';
+      syncMsg.textContent = 'Starting nuke & resync...';
+      statusPill.className = 'status-pill syncing';
+      statusTxt.textContent = 'Syncing';
+      try {
+        await fetch('/api/nuke', { method: 'POST' });
+        while (true) {
+          await sleep(2000);
+          try {
+            const res = await fetch('/api/status');
+            const d = await res.json();
+            syncMsg.textContent = d.message || '...';
+            if (d.status === 'idle') {
+              statusPill.className = 'status-pill';
+              statusTxt.textContent = 'Connected';
+              syncOverlay.style.display = 'none';
+              loadAll();
+              break;
+            }
+            if (d.status === 'error') {
+              statusPill.className = 'status-pill error';
+              statusTxt.textContent = 'Error';
+              syncTitle.textContent = 'Sync Failed';
+              await sleep(5000);
+              syncOverlay.style.display = 'none';
+              break;
+            }
+          } catch {}
+        }
+      } catch (err) {
+        syncTitle.textContent = 'Error';
+        syncMsg.textContent = err.message;
+      }
+    });
+
+    // ── Init ──
+    function loadAll() {
+      loadSummary();
+      loadFeeComponents();
+      loadDomesticIntl();
+      loadMonthly();
+      loadMethodSplit();
+      loadCardSplit();
+      loadTxnTypes();
+    }
+    loadAll();
+  </script>
+</body>
+</html>
