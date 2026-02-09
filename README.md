@@ -1,4 +1,4 @@
-bun-stripe-sync
+local-sync-script
 
 syncs your stripe data to a local postgres database and gives you a web ui to query it.
 
@@ -6,12 +6,12 @@ requires: mac, docker desktop (https://www.docker.com/products/docker-desktop/)
 
 one-liner install (installs bun, clones repo, starts postgres, runs the tool):
 
-  curl -fsSL https://raw.githubusercontent.com/YOUR_USER/bun-stripe-sync/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/pretzelai/local-sync-script/main/install.sh | bash
 
 or do it manually:
 
   1. install bun if you don't have it: curl -fsSL https://bun.sh/install | bash
-  2. clone the repo: git clone https://github.com/YOUR_USER/bun-stripe-sync.git && cd bun-stripe-sync
+  2. clone the repo: git clone https://github.com/pretzelai/local-sync-script.git && cd local-sync-script
   3. install deps: bun install
   4. start postgres: docker compose up -d
   5. run it: bun start
