@@ -45,12 +45,12 @@ bun install
 
 # start postgres
 echo "starting postgres..."
-docker compose up -d
+docker compose up -d < /dev/null
 
 # wait for postgres to be ready
 echo "waiting for postgres to be ready..."
 for i in $(seq 1 30); do
-  if docker compose exec -T postgres pg_isready -U postgres &> /dev/null; then
+  if docker compose exec -T postgres pg_isready -U postgres < /dev/null &> /dev/null; then
     break
   fi
   sleep 1
