@@ -4,7 +4,7 @@
     "": {
       "name": "bun-stripe-sync",
       "dependencies": {
-        "@paymentsdb/sync-engine": "^0.0.5",
+        "@paymentsdb/sync-engine": "^0.0.7",
         "pg": "^8.16.3",
       },
       "devDependencies": {
@@ -73,7 +73,7 @@
 
     "@ngrok/ngrok-win32-x64-msvc": ["@ngrok/ngrok-win32-x64-msvc@1.7.0", "", { "os": "win32", "cpu": "x64" }, "sha512-UFJg/duEWzZlLkEs61Gz6/5nYhGaKI62I8dvUGdBR3NCtIMagehnFaFxmnXZldyHmCM8U0aCIFNpWRaKcrQkoA=="],
 
-    "@paymentsdb/sync-engine": ["@paymentsdb/sync-engine@0.0.5", "", { "dependencies": { "@ngrok/ngrok": "^1.4.1", "chalk": "^5.3.0", "commander": "^12.1.0", "dotenv": "^16.4.7", "express": "^4.18.2", "inquirer": "^12.3.0", "papaparse": "5.4.1", "pg": "^8.16.3", "pg-node-migrations": "0.0.8", "stripe": "^17.7.0", "supabase-management-js": "^0.1.6", "ws": "^8.18.0", "yesql": "^7.0.0" }, "bin": { "sync-engine": "dist/cli/index.js" } }, "sha512-XujTeasNbLS+fSSnBpj6Kls1PDt3Bn4+hDAZqKYttFpJrtjCU0p5q1XA7pJbwABdIrpUQ95esshrFIMxCQ0QMQ=="],
+    "@paymentsdb/sync-engine": ["@paymentsdb/sync-engine@0.0.7", "", { "dependencies": { "@ngrok/ngrok": "^1.4.1", "chalk": "^5.3.0", "commander": "^12.1.0", "dotenv": "^16.4.7", "express": "^4.18.2", "inquirer": "^12.3.0", "papaparse": "5.4.1", "pg": "^8.16.3", "pg-node-migrations": "0.0.8", "stripe": "^17.7.0", "supabase-management-js": "^0.1.6", "ws": "^8.18.0", "yesql": "^7.0.0" }, "bin": { "sync-engine": "dist/cli/index.js" } }, "sha512-VaFc6vK0epAKZxFwUZDWlIvwL/BJnCkW5LbTGRq5LTUlUx+fKyxD16Kus7mwdfleneFGlrRZytB2ia+XYT6uxg=="],
 
     "@types/node": ["@types/node@25.2.2", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-BkmoP5/FhRYek5izySdkOneRyXYN35I860MFAGupTdebyE66uZaR+bXLHq8k4DirE5DwQi3NuhvRU1jqTVwUrQ=="],
 
