@@ -1,34 +1,72 @@
-local-sync-script
+# local-sync-script
 
-syncs your stripe data to a local postgres database and gives you a web ui to query it.
+Syncs your Stripe data to a local Postgres database and gives you a web UI to query it.
 
-requires: mac, docker desktop (https://www.docker.com/products/docker-desktop/)
+**Requires:** Mac, [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-one-liner install (installs bun, clones repo, starts postgres, runs the tool):
+## One-liner install
 
-  curl -fsSL https://raw.githubusercontent.com/pretzelai/local-sync-script/main/install.sh | bash
+Installs Bun, clones repo, starts Postgres, runs the tool:
 
-or do it manually:
+```bash
+curl -fsSL https://raw.githubusercontent.com/pretzelai/local-sync-script/main/install.sh | bash
+```
 
-  1. install bun if you don't have it: curl -fsSL https://bun.sh/install | bash
-  2. clone the repo: git clone https://github.com/pretzelai/local-sync-script.git && cd local-sync-script
-  3. install deps: bun install
-  4. start postgres: docker compose up -d
-  5. run it: bun start
+## Manual setup
 
-on first run it asks for your stripe secret key (sk_... or rk_...) and saves it to .env.
-it runs migrations and backfills your balance transactions from stripe into postgres.
-then opens a web ui at http://localhost:3000 where you can run sql queries.
+1. Install Bun if you don't have it:
 
-if the database already has data it skips the sync and goes straight to the web ui.
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
 
-other commands:
+2. Clone the repo:
 
-  bun start --resync    re-run migrate + backfill without dropping data
-  bun start --nuke      drop everything and start fresh
+```bash
+git clone https://github.com/pretzelai/local-sync-script.git && cd local-sync-script
+```
 
-you can also nuke and resync from the web ui button.
+3. Install deps:
 
-to stop: ctrl+c in the terminal, then docker compose down to stop postgres.
+```bash
+bun install
+```
 
-queries live in src/queries.ts, add your own there and they show up in the sidebar.
+4. Start Postgres:
+
+```bash
+docker compose up -d
+```
+
+5. Run it:
+
+```bash
+bun start
+```
+
+## How it works
+
+On first run it asks for your Stripe secret key (`sk_...` or `rk_...`) and saves it to `.env`.
+It runs migrations and backfills your balance transactions from Stripe into Postgres,
+then opens a web UI at [http://localhost:3000](http://localhost:3000) where you can run SQL queries.
+
+If the database already has data it skips the sync and goes straight to the web UI.
+
+## Other commands
+
+```bash
+bun start --resync    # re-run migrate + backfill without dropping data
+bun start --nuke      # drop everything and start fresh
+```
+
+You can also nuke and resync from the web UI button.
+
+To stop: `Ctrl+C` in the terminal, then:
+
+```bash
+docker compose down
+```
+
+## Custom queries
+
+Queries live in `src/queries.ts` — add your own there and they show up in the sidebar.
