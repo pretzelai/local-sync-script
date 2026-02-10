@@ -1,7 +1,13 @@
 #!/usr/bin/env bun
 
 import { loadConfig, promptForConfig, type Config } from "./config";
-import { testConnection, isDatabaseReady, nukeDatabase, runMigrate, runBackfill } from "./sync";
+import {
+  testConnection,
+  isDatabaseReady,
+  nukeDatabase,
+  runMigrate,
+  runBackfill,
+} from "./sync";
 import { startServer } from "./server";
 
 const args = process.argv.slice(2);
@@ -9,13 +15,16 @@ const flags = new Set(args);
 const forceResync = flags.has("--resync");
 const forceNuke = flags.has("--nuke");
 const objectIdx = args.indexOf("--object");
-const backfillObject = objectIdx !== -1 && args[objectIdx + 1] ? args[objectIdx + 1] : "balance_transaction";
+const backfillObject =
+  objectIdx !== -1 && args[objectIdx + 1] ? args[objectIdx + 1] : "all";
 
 async function main() {
   console.log("\n  Stripe Sync Explorer\n");
 
-  if (forceNuke) console.log("  --nuke flag: will drop and recreate everything");
-  else if (forceResync) console.log("  --resync flag: will re-run migrate + backfill");
+  if (forceNuke)
+    console.log("  --nuke flag: will drop and recreate everything");
+  else if (forceResync)
+    console.log("  --resync flag: will re-run migrate + backfill");
   if (forceNuke || forceResync) console.log(`  --object: ${backfillObject}`);
 
   // ── 1. Load or prompt for config ──
@@ -38,7 +47,9 @@ async function main() {
   } catch (err: any) {
     console.error("\n  Failed to connect to PostgreSQL:");
     console.error(`  ${err.message}\n`);
-    console.error("  Make sure PostgreSQL is running. You can use the included docker-compose.yml:");
+    console.error(
+      "  Make sure PostgreSQL is running. You can use the included docker-compose.yml:",
+    );
     console.error("    docker compose up -d\n");
     process.exit(1);
   }
@@ -49,7 +60,8 @@ async function main() {
     await nukeDatabase(config.databaseUrl);
   }
 
-  const shouldSync = forceNuke || forceResync || !(await isDatabaseReady(config.databaseUrl));
+  const shouldSync =
+    forceNuke || forceResync || !(await isDatabaseReady(config.databaseUrl));
 
   if (shouldSync) {
     console.log("  Running sync...\n");
